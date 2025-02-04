@@ -1,0 +1,19 @@
+env:
+  output_size: 1 #predicting scalar
+  obs_idxs: null
+  type_idxs: null
+  plot_idxs: null 
+  goal_idxs: null
+  post_process: false
+  post_process_idxs: null
+  seed: 0
+
+model:
+  num_epochs: 8000
+  use_dom_know_train: true
+  use_dom_know_eval: false
+  store_train_deltas: false
+  sample_deltas: false
+  sample_train: false
+  mul_approx_train_deltas: 30
+  skew: right
