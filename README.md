@@ -6,7 +6,7 @@ Code for extrapolation in materials property prediction as proposed in [Known Un
 ## Setup
 Clone the repository
 ```
-git clone https://github.com/nofitsegal/matex.git
+git clone https://github.com/learningmatter-mit/matex.git
 ```
 Create and activate a virtual environment
 ```
