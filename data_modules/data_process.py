@@ -19,9 +19,9 @@ from sklearn.model_selection import train_test_split
 # imports for data processing
 from data_utils import *
 
-DATA_DIR = 'blt/data'
-modnet_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(modnet_dir)
+MATEX_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(MATEX_DIR)
+DATA_DIR = os.path.join(MATEX_DIR, 'blt/data')
 
 import deepchem as dc
 from deepchem.feat.molecule_featurizers import RDKitDescriptors

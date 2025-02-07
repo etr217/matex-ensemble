@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import os
+import sys
 from sklearn.preprocessing import StandardScaler, Normalizer, MinMaxScaler
 from pymatgen.core import Composition, Structure
 import collections
@@ -11,7 +12,10 @@ import json
 # import matex.blt.configs.config as config
 
 from modnet.preprocessing import MODData
-DATA_DIR = 'blt/data'
+
+MATEX_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(MATEX_DIR)
+DATA_DIR = os.path.join(MATEX_DIR, 'blt/data')
 
 
 class CompositionError(Exception):
