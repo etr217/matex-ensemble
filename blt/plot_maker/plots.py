@@ -3,18 +3,19 @@ import os.path as osp
 import os
 import numpy as np
 import pylab as plt
+from collections import defaultdict
 from scipy.stats import gaussian_kde, pearsonr, spearmanr
 from scipy.special import kl_div
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from sklearn.metrics import r2_score
-from props_list import get_prop_labels
+from props_utils import get_prop_labels, get_results_filename, get_latest_datetime_dir, get_prop_rep
 
-import matex.blt.configs.config as config
+import blt.configs.config as config
 
 
 def load_eval_data(prop, path, method='bilinear'):
-    eval_data = {}
+    eval_data = defaultdict(lambda: defaultdict(dict))
 
     ood_file = os.path.join(path, f'{method}_eval_ood.pkl')
     in_dist_file = os.path.join(path, f'{method}_eval_in_dist.pkl')
@@ -31,7 +32,7 @@ def load_eval_data(prop, path, method='bilinear'):
             in_dist_gt = in_dist_data['gt']
 
         # Store data for the current property
-        eval_data[prop] = {
+        eval_data[method][prop] = {
             'ood': {'preds': ood_preds, 'gt': ood_gt},
             'in_dist': {'preds': in_dist_preds, 'gt': in_dist_gt}
         }
@@ -92,7 +93,7 @@ def pca_plot(benchmark, prop, rep_file, path, title):
     """
 
     # Load data
-    data_path = osp.join(config.DATA_DIR, benchmark, prop, f'demos_{rep_file}.pkl')
+    data_path = osp.join(config.DATA_DIR, benchmark, prop, f'{rep_file}.pkl')
     with open(data_path, 'rb') as f:
         data = pkl.load(f)
     
@@ -131,25 +132,33 @@ def pca_plot(benchmark, prop, rep_file, path, title):
     print(f"PCA plot saved at: {save_path}")
 
 
-def tsne_plot(path, datapath):
+def tsne_plot(datapath, filename):
     """ 
-    Plots t-SNE of material representations (X) based on ALL data
+    Plots t-SNE of material representations (X) based on ALL data.
     """
-    with open(datapath, 'rb') as input_file:
+    data_path = os.path.join(datapath, f'{filename}.pkl')
+    with open(data_path, 'rb') as input_file:
         all_data = pkl.load(input_file)
-    tsne = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=3)
-    X_embedded = tsne.fit_transform(np.concatenate([all_data['train_X'], all_data['eval_X'], all_data['ood_X']])) #train, in dist, ood
-    plt.close('all')
+
+    tsne = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=3, random_state=42)
+    X_embedded = tsne.fit_transform(np.concatenate([all_data['train_X'], all_data['eval_X'], all_data['ood_X']])) 
+
     plt.figure()
     nX, nE = len(all_data['train_X']), len(all_data['eval_X'])
-    plt.scatter(X_embedded[:nX,0], X_embedded[:nX,1], alpha=0.5, label='train')
-    plt.scatter(X_embedded[nX:nX+nE,0], X_embedded[nX:nX+nE,1], alpha=0.5, label='in dist')
-    plt.scatter(X_embedded[nX+nE:,0], X_embedded[nX+nE:,1], alpha=0.5, label='ood')
+    plt.scatter(X_embedded[:nX, 0], X_embedded[:nX, 1], c='silver', label='Training data')
+    plt.scatter(X_embedded[nX:nX+nE, 0], X_embedded[nX:nX+nE, 1], c='gray', label='ID samples')
+    plt.scatter(X_embedded[nX+nE:, 0], X_embedded[nX+nE:, 1], c='tomato', label='OOD data')
+
+    plt.xlabel('TSNE Component 1', fontsize=14)
+    plt.ylabel('TSNE Component 2', fontsize=14)
+    plt.title('TSNE Projection of Data Representation', fontsize=16)
     plt.legend()
-    plt.savefig(osp.join(path, 'tsne_Xs.png'), bbox_inches='tight', dpi=300)
+    plt.tight_layout()
+    plt.savefig(os.path.join(datapath, 'tsne_Xs.png'), bbox_inches='tight', dpi=300)
 
 
-def parity_plot(eval_data, prop, logdir, method='bilinear', x_label="Property"):
+
+def parity_plot(eval_data, prop, logdir, x_label="Property", method='bilinear'):
     """
     Generate a figure with method's parity plot.
 
@@ -214,63 +223,17 @@ def parity_plot(eval_data, prop, logdir, method='bilinear', x_label="Property"):
     print(f"parity plot saved at: {osp.join(logdir, f'parity_plot.png')}")
 
 
-def plot_correlations(path, model_type='bilinear', EPS=1e-10):
-    """
-    Plots scatter plot -- predictions vs ground truth and 
-    computes pearson and spearman correlations, R-squared and KL divergence.
-    """
-    for eval_type in ['in_dist', 'ood']:
-        # load data
-        res_pth = osp.join(path, f'{model_type}_eval_{eval_type}.pkl')
-        with open(res_pth, "rb") as input_file:
-            res = pkl.load(input_file)
-        preds = res['preds']
-        gt = res['gt']   
-
-        # format plot 
-        plt.close('all')
-        plt.figure()
-        plt.scatter(gt, preds)
-        plt.axline((0, 0), (1, 1), linewidth=1, color='r')
-        plt.xlabel('gt')
-        plt.ylabel('pred')
-
-        # compute correlatios
-        pearson_coeff = pearsonr(preds.squeeze(), gt.squeeze())
-        spearman_coeff = spearmanr(preds.squeeze(), gt.squeeze())
-        r_squared = r2_score(gt.squeeze(), preds.squeeze())
-        bins = np.linspace(min(gt.min(), preds.min()), max(gt.max(), preds.max()), 100)
-        hist_gt, _ = np.histogram(gt.squeeze(), bins=bins, density=True)
-        hist_preds, _ = np.histogram(preds.squeeze(), bins=bins, density=True)
-        hist_gt_normalized = hist_gt / np.sum(hist_gt)
-        hist_preds_normalized = hist_preds / np.sum(hist_preds)
-        kl_divergence = np.sum(kl_div(hist_gt_normalized+EPS, hist_preds_normalized+EPS)) #lower better [0,inf]
-        
-        # save plot
-        plt.title(f'pearson stat: {round(pearson_coeff.statistic,2)}, pval: {round(pearson_coeff.pvalue,2)}\n \
-                    spearman stat: {round(spearman_coeff.statistic,2)}, pval: {round(spearman_coeff.pvalue,2)}\n \
-                    r_squared: {round(r_squared,2)}\n \
-                    kl_div: {round(kl_divergence,2)}')
-        plt.savefig(osp.join(path, f'{eval_type}_corr.png'), bbox_inches='tight', dpi=300)
-        results_path = os.path.join(path, f'{eval_type}_results.txt')
-        with open(results_path, 'a') as f:
-            f.write(f'Evaluation Type: {eval_type}\n')  # Write evaluation type
-            f.write(f'pearson: {round(pearson_coeff.statistic,2)}, spearman: {round(spearman_coeff.statistic,2)}, r2: {round(r_squared,2)}, kl_div: {round(kl_divergence,2)}')  # Write mean and sem result
-            f.write('\n')
-
-
-def get_filename(benchmark, prop):
-    # Build the filename
-    filename_parts = [f'{prop}']
-    if benchmark == 'matbench':
-        filename_parts.append('magpie')
-    elif benchmark == 'mp' or benchmark == 'aflow':
-        filename_parts.append('oliynyk')
-    elif benchmark == 'moleculenet':
-        filename_parts.append('rdkit')
-    # Join the parts with underscores
-    filename = '_'.join(filename_parts) + '.pkl'
-    return filename
+def save_correlation_scores(path, model_type='bilinear', EPS=1e-10):
+    with open(os.path.join(path, 'correlation.txt'), 'w') as f:
+        for eval_type in {'in_dist', 'ood'}:  # Use a set to prevent duplicates
+            try:
+                res = pkl.load(open(os.path.join(path, f'{model_type}_eval_{eval_type}.pkl'), "rb"))
+                preds, gt = res['preds'].squeeze(), res['gt'].squeeze()
+                bins = np.linspace(min(gt.min(), preds.min()), max(gt.max(), preds.max()), 100)
+                kl_divergence = np.sum(kl_div(*[np.histogram(x, bins, density=True)[0] / np.sum(np.histogram(x, bins, density=True)[0]) + EPS for x in [gt, preds]]))
+                f.write(f"{eval_type}: Pearson {pearsonr(preds, gt)[0]:.2f}, Spearman {spearmanr(preds, gt)[0]:.2f}, R² {r2_score(gt, preds):.2f}, KL {kl_divergence:.2f}\n")
+            except Exception as e:
+                print(f"Error processing {eval_type}: {e}")
 
 
 if __name__ == "__main__":
@@ -283,15 +246,18 @@ if __name__ == "__main__":
 
     for benchmark, prop in zip(benchmarks, props):
 
-        path = os.path.join('log', f'{benchmark}', f'{prop}')
+        init_path = os.path.join(config.MATEX_DIR, 'log', f'{benchmark}', f'{prop}')
 
         x_label, title = get_prop_labels(prop)
+        results_filename = get_results_filename(prop, benchmark)
+        prop_path = os.path.join(init_path, results_filename, get_latest_datetime_dir(os.path.join(init_path, results_filename)))
+        eval_data = load_eval_data(prop, prop_path)
 
-        eval_data = load_eval_data(prop, path)
-        kde_dist(path, eval_data, prop, x_label)
-        parity_plot(eval_data, prop, path, x_label)
-        plot_correlations(path)
+        # plots
+        kde_dist(prop_path, eval_data, prop, x_label)
+        parity_plot(eval_data, prop, prop_path, x_label, method='bilinear')
+        save_correlation_scores(prop_path)
 
-        filename = get_filename(benchmark, prop)
-        datapath = osp.join('data', f'{benchmark}', f'{prop}', f'demos_{filename}.pkl')
-        tsne_plot(path, datapath)
+        rep = get_prop_rep(benchmark)
+        datapath = osp.join(config.BLT_DIR, 'data', f'{benchmark}', f'{prop}')
+        tsne_plot(datapath, rep)
