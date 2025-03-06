@@ -1,6 +1,7 @@
 # Known Unknowns: Out-of-Distribution Property Prediction in Materials and Molecules
 [//]: # (Badges)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14983641.svg)](https://doi.org/10.5281/zenodo.14983641)
 
 Code for extrapolation in materials property prediction as proposed in [Known Unknowns: Out-of-Distribution Property Prediction in Materials and Molecules](https://openreview.net/pdf?id=HkfnueE7Ae).
 ![](motivation.png)
