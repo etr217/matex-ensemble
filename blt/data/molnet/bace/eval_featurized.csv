@@ -1,0 +1,6 @@
+formula,target
+FC(F)Oc1ccc(cc1)[C@@]1(N=C(N)N(C)C1=O)c1cc(ccc1)C#CC(C)C,0.9500987346089813
+Fc1c2c(ccc1)C(N=C2N)(C=1C=C(C)C(=O)N(C=1)C)c1cc(ccc1)C#CC1CC1,1.3345170655697793
+S1(=O)CC(Cc2cc(OC(COC)C(F)(F)F)c(N)c(F)c2)C(O)C([NH2+]Cc2cn(nc2)CC(C)(C)C)C1,0.9343472551402112
+S(=O)(=O)(N(C)c1cc(cc(c1)C(=O)N[C@H]([C@@H](O)CC(=O)N[C@@H](CC(C)C)C(=O)N[C@H](C(=O)N([C@H](Cc1ccccc1)C(=O)N1CCC[C@H]1C(OC)=O)C)C)Cc1ccccc1)C(=O)N[C@H](C)c1ccccc1)C,0.6108485656906328
+S(CCC([NH3+])(Cc1ccccc1)CO)c1cc(cc(N(S(=O)(=O)C)C)c1)C(=O)NC(C)c1ccc(F)cc1,-1.7996155944029735
