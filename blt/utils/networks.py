@@ -9,6 +9,7 @@ def weight_init(m):
         nn.init.orthogonal_(m.weight.data)
         if hasattr(m.bias, 'data'):
             m.bias.data.fill_(0.0)
+    print('hi')
 
 
 def mlp(input_dim, hidden_dim, output_dim, hidden_depth):

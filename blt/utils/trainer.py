@@ -9,6 +9,14 @@ warnings.filterwarnings('ignore')
 
 from utils.util import models_save, get_deltas, AvgMeter
 
+def train_bootstrapped(model_type, dataset, model, logdir, obs_idxs, skew, \
+                     num_epochs=500, batch_size=32, checkpoint_path=None, store_train_deltas=True, similarity_type=None, pct=.25):
+    dataset_bs = dataset.copy()
+    idx = np.random.randint(len(dataset['train_Y']), size = int(len(dataset['train_Y'])*pct))
+    dataset_bs['train_X'] = dataset_bs['train_X'][idx]
+    dataset_bs['train_Y'] = dataset_bs['train_Y'][idx]
+    return train_supervised(model_type, dataset_bs, model, logdir, obs_idxs, skew,
+                     num_epochs, batch_size, checkpoint_path, store_train_deltas, similarity_type), idx
 
 def train_supervised(model_type, dataset, model, logdir, obs_idxs, skew, \
                      num_epochs=500, batch_size=32, checkpoint_path=None, store_train_deltas=True, similarity_type=None):
@@ -21,6 +29,9 @@ def train_supervised(model_type, dataset, model, logdir, obs_idxs, skew, \
     epoch_losses = []
     idxs = np.array(range(len(X)))
     num_batches = len(idxs) // batch_size
+    if len(idxs) < batch_size:
+        num_batches = 1
+        batch_size = len(idxs)
     print('num_epochs', num_epochs, 'num_batches', num_batches)
     train_deltas = []
     
@@ -75,6 +86,7 @@ def train_supervised(model_type, dataset, model, logdir, obs_idxs, skew, \
     plt.xlabel('epochs')
     plt.ylabel('MAE')
     plt.plot(epoch_losses)
+    plt.yscale('log')
     plt.savefig(os.path.join(logdir, model_type+'_losses.png'))
     print('Finished Training')
 

@@ -50,7 +50,7 @@ def get_prop_rep(benchmark):
         rep = 'magpie'
     elif benchmark == 'mp' or benchmark == 'aflow':
         rep = 'oliynyk'
-    elif benchmark == 'moleculenet':
+    elif benchmark == 'molnet':
         rep = 'rdkit'
     return rep
 
@@ -119,6 +119,6 @@ def get_results_filename(prop, benchmark, model_type='bilinear'):
 
 def get_latest_datetime_dir(base_path):
     dirs = [d for d in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, d))]
-    latest_dir = max(dirs, key=lambda d: datetime.datetime.strptime(d, '%y-%m-%d_%H-%M-%S'), default=None)
+    latest_dir = max(dirs, key=lambda d: datetime.datetime.strptime(d[:17], '%y-%m-%d_%H-%M-%S'), default=None)
     return os.path.join(base_path, latest_dir) if latest_dir else None
 

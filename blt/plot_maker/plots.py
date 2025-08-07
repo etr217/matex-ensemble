@@ -9,9 +9,9 @@ from scipy.special import kl_div
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from sklearn.metrics import r2_score
-from props_utils import get_prop_labels, get_results_filename, get_latest_datetime_dir, get_prop_rep
+from plot_maker.props_utils import get_prop_labels, get_results_filename, get_latest_datetime_dir, get_prop_rep
 
-import blt.configs.config as config
+# import blt.configs.config as config
 
 
 def load_eval_data(prop, path, method='bilinear'):
@@ -93,7 +93,9 @@ def pca_plot(benchmark, prop, rep_file, path, title):
     """
 
     # Load data
-    data_path = osp.join(config.DATA_DIR, benchmark, prop, f'{rep_file}.pkl')
+    # EDITED PATH (config)
+    # data_path = osp.join(config.DATA_DIR, benchmark, prop, f'{rep_file}.pkl')
+    data_path = osp.join('data', benchmark, prop, f'{rep_file}.pkl')
     with open(data_path, 'rb') as f:
         data = pkl.load(f)
     
@@ -246,7 +248,8 @@ if __name__ == "__main__":
 
     for benchmark, prop in zip(benchmarks, props):
 
-        init_path = os.path.join(config.MATEX_DIR, 'log', f'{benchmark}', f'{prop}')
+        # init_path = os.path.join(config.MATEX_DIR, 'log', f'{benchmark}', f'{prop}')
+        init_path = os.path.join('log', f'{benchmark}', f'{prop}')
 
         x_label, title = get_prop_labels(prop)
         results_filename = get_results_filename(prop, benchmark)
@@ -259,5 +262,6 @@ if __name__ == "__main__":
         save_correlation_scores(prop_path)
 
         rep = get_prop_rep(benchmark)
-        datapath = osp.join(config.BLT_DIR, 'data', f'{benchmark}', f'{prop}')
+        # datapath = osp.join(config.BLT_DIR, 'data', f'{benchmark}', f'{prop}')
+        datapath = osp.join('data', f'{benchmark}', f'{prop}')
         tsne_plot(datapath, rep)

@@ -18,6 +18,7 @@ import datetime
 from utils.util import models_save, models_load, save_pkl, load_pkl, define_model, eval_supervised
 from utils.trainer import train_supervised
 from utils.transducers import define_transducer
+from plot_maker.plots import kde_dist, parity_plot, save_correlation_scores, get_prop_labels, load_eval_data
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -29,10 +30,11 @@ def run_supervised_training_and_eval(args, logdir='log'):
     v = yaml.load(open(osp.join('configs', 'materials.yml')))
 
     # Environment 
-    seed = v['env']['seed']
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.manual_seed(seed)
+    if not args.random:
+        seed = v['env']['seed']
+        np.random.seed(seed)
+        random.seed(seed)
+        torch.manual_seed(seed)
 
     # Model
     num_epochs = v['model']['num_epochs']
@@ -89,6 +91,11 @@ def run_supervised_training_and_eval(args, logdir='log'):
     # Data
     print('loading data')
     samples = load_pkl(osp.join('data', args.dataset_name, args.prop_type, f'{args.data_filename}.pkl'))
+    split_frac = len(samples['train_formula']) / (
+        len(samples['train_formula']) + len(samples['eval_formula']) + len(samples['ood_formula'])
+    )
+    print(f'Split: {split_frac}')
+    save_pkl(samples, logpath=osp.join(logdir, 'labelled_data.pkl'))
     if obs_idxs is None: 
         obs_idxs = range(samples['train_X'].shape[-1])
         x_size = len(obs_idxs)
@@ -161,6 +168,14 @@ def run_supervised_training_and_eval(args, logdir='log'):
                             args.similarity_type, transducer=test_transducer, use_dom_know_eval=use_dom_know_eval, eval_type='ood')
     save_pkl(eval_samples_ood, logpath=osp.join(logdir, args.model_type+'_eval_ood'+'.pkl'))
 
+    x_label, _ = get_prop_labels(args.prop_type)
+    eval_data = load_eval_data(args.prop_type, logdir)
+
+    # plots
+    kde_dist(logdir, eval_data, args.prop_type, x_label)
+    parity_plot(eval_data, args.prop_type, logdir, x_label, method='bilinear')
+    save_correlation_scores(logdir)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -175,6 +190,7 @@ if __name__ == "__main__":
     parser.add_argument('--hidden_depth', type=int, default=3)
     parser.add_argument('--debug', default=False)
     parser.add_argument('--model_path', default=None) #datetime
+    parser.add_argument('--random', type=bool, default=False) #datetime
     args = parser.parse_args()
 
     run_supervised_training_and_eval(args)

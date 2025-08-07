@@ -64,16 +64,76 @@ def modnet_preprocess(path, ood_ratio=0.05):
     return normalize_data(train, eval, ood, args.property, args.scaler)
 
 
-def molnet_preprocess(args):
-    featurizer = RDKitDescriptors(is_normalized=True)
+def molnet_preprocess_swanson(args):
+    featurizer = RDKitDescriptors()#is_normalized=True)
     if args.property == 'delaney':
-        _, datasets, _ = dc.molnet.load_delaney(featurizer=featurizer) # featurizer only works for ecfp, graphconv, onehot
+        _, datasets, _ = dc.molnet.load_delaney(featurizer=featurizer, reload=False) # featurizer only works for ecfp, graphconv, onehot
     elif args.property == 'freesolv':
-        _, datasets, _ = dc.molnet.load_freesolv(featurizer=featurizer)
+        _, datasets, _ = dc.molnet.load_freesolv(featurizer=featurizer, reload=False)
     elif args.property == 'lipo':
-        _, datasets, _ = dc.molnet.load_lipo(featurizer=featurizer)
+        _, datasets, _ = dc.molnet.load_lipo(featurizer=featurizer, reload=False)
     elif args.property == 'bace':
-        _, datasets, _ = dc.molnet.load_bace_regression(featurizer=featurizer)
+        _, datasets, _ = dc.molnet.load_bace_regression(featurizer=featurizer, reload=False)
+
+
+    train, valid, test = datasets
+    all_dataset = dc.data.NumpyDataset(
+    np.concatenate([train.X, valid.X, test.X]),
+    np.concatenate([train.y, valid.y, test.y]),
+    np.concatenate([train.w, valid.w, test.w]),
+    np.concatenate([train.ids, valid.ids, test.ids])
+    )
+    n_samples = len(all_dataset)
+    
+    # split 20% eval
+    ood_indices, train_indices = train_test_split(
+        list(range(len(all_dataset))), 
+        test_size=args.test_size
+    )
+    eval_indices, ood_indices = ood_indices[:5], ood_indices[5:]
+
+    # Split the dataset into train, eval, and OOD
+    train_dataset = dc.data.NumpyDataset(
+        all_dataset.X[train_indices],
+        all_dataset.y[train_indices],
+        all_dataset.w[train_indices],
+        all_dataset.ids[train_indices]
+    )
+
+    eval_dataset = dc.data.NumpyDataset(
+        all_dataset.X[eval_indices],
+        all_dataset.y[eval_indices],
+        all_dataset.w[eval_indices],
+        all_dataset.ids[eval_indices]
+    )
+
+    ood_dataset = dc.data.NumpyDataset(
+        all_dataset.X[ood_indices],
+        all_dataset.y[ood_indices],
+        all_dataset.w[ood_indices],
+        all_dataset.ids[ood_indices]
+    )
+
+    # save csv
+    train_set  = save_dataset_as_csv(train_dataset, f'train_featurized.csv', args.dataset_name, args.property)
+    eval_set = save_dataset_as_csv(eval_dataset, f'eval_featurized.csv', args.dataset_name, args.property)
+    ood_set = save_dataset_as_csv(ood_dataset, f'ood_featurized.csv', args.dataset_name, args.property)
+
+    train_set , eval_set, ood_set = handle_nan_values(train_set, eval_set, ood_set, args.nan_strategy, args.dataset_name)
+
+    return train_set, eval_set, ood_set
+
+
+def molnet_preprocess_ood(args):
+    featurizer = RDKitDescriptors()#is_normalized=True)
+    if args.property == 'delaney':
+        _, datasets, _ = dc.molnet.load_delaney(featurizer=featurizer, reload=False) # featurizer only works for ecfp, graphconv, onehot
+    elif args.property == 'freesolv':
+        _, datasets, _ = dc.molnet.load_freesolv(featurizer=featurizer, reload=False)
+    elif args.property == 'lipo':
+        _, datasets, _ = dc.molnet.load_lipo(featurizer=featurizer, reload=False)
+    elif args.property == 'bace':
+        _, datasets, _ = dc.molnet.load_bace_regression(featurizer=featurizer, reload=False)
 
     train, valid, test = datasets
     all_dataset = dc.data.NumpyDataset(
@@ -143,21 +203,30 @@ def main(args, ood_ratio=0.05):
     path = os.path.join(DATA_DIR, args.dataset_name, args.property)
     os.makedirs(path, exist_ok=True)
 
+    if args.method == 'ood':
+        if args.dataset_name == 'matbench':
+            train, eval, ood = molnet_preprocess_ood(path, ood_ratio=ood_ratio)
+            dataframes = {
+                'train': train,
+                'eval': eval,
+                'ood': ood
+            }
+        elif args.dataset_name == 'molnet':
+            train, eval, ood = molnet_preprocess_ood(args)
+            dataframes = {
+                'train': train,
+                'eval': eval,
+                'ood': ood
+            }
+    elif args.method == 'swanson':
+        if args.dataset_name == 'molnet':
+            train, eval, ood = molnet_preprocess_swanson(args)
+            dataframes = {
+                'train': train,
+                'eval': eval,
+                'ood': ood
+            }
 
-    if args.dataset_name == 'matbench':
-        train, eval, ood = modnet_preprocess(path, ood_ratio=ood_ratio)
-        dataframes = {
-            'train': train,
-            'eval': eval,
-            'ood': ood
-        }
-    elif args.dataset_name == 'molnet':
-        train, eval, ood = molnet_preprocess(args)
-        dataframes = {
-            'train': train,
-            'eval': eval,
-            'ood': ood
-        }
 
     dataset = {}
     for split_name in ['train', 'eval', 'ood']:
@@ -209,7 +278,9 @@ if __name__ == "__main__":
                                               'bace', 'delaney', 'freesolv', 'lipo'])
     parser.add_argument('--nan_strategy', default='drop_sample', choices=['const', 'drop_feat', 'drop_sample'])
     parser.add_argument('--scaler', default='minmax', choices=['minmax', 'standard'])
-    
+    parser.add_argument('--method', default='ood', choices=['ood', 'swanson'])
+    parser.add_argument('--test_size', type=float, default=.5)
+
     args = parser.parse_args()
 
     main(args)
