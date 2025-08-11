@@ -115,9 +115,9 @@ def molnet_preprocess_swanson(args):
     )
 
     # save csv
-    train_set  = save_dataset_as_csv(train_dataset, f'train_featurized.csv', args.dataset_name, args.property)
-    eval_set = save_dataset_as_csv(eval_dataset, f'eval_featurized.csv', args.dataset_name, args.property)
-    ood_set = save_dataset_as_csv(ood_dataset, f'ood_featurized.csv', args.dataset_name, args.property)
+    train_set  = save_dataset_as_csv(train_dataset, f'train_featurized.csv', args.dataset_name, args.property, label = args.data_label)
+    eval_set = save_dataset_as_csv(eval_dataset, f'eval_featurized.csv', args.dataset_name, args.property, label = args.data_label)
+    ood_set = save_dataset_as_csv(ood_dataset, f'ood_featurized.csv', args.dataset_name, args.property, label = args.data_label)
 
     train_set , eval_set, ood_set = handle_nan_values(train_set, eval_set, ood_set, args.nan_strategy, args.dataset_name)
 
@@ -177,9 +177,9 @@ def molnet_preprocess_ood(args):
     )
 
     # save csv
-    train_set  = save_dataset_as_csv(train_dataset, f'train_featurized.csv', args.dataset_name, args.property)
-    eval_set = save_dataset_as_csv(eval_dataset, f'eval_featurized.csv', args.dataset_name, args.property)
-    ood_set = save_dataset_as_csv(ood_dataset, f'ood_featurized.csv', args.dataset_name, args.property)
+    train_set  = save_dataset_as_csv(train_dataset, f'train_featurized.csv', args.dataset_name, args.property, label = args.data_label)
+    eval_set = save_dataset_as_csv(eval_dataset, f'eval_featurized.csv', args.dataset_name, args.property, label = args.data_label)
+    ood_set = save_dataset_as_csv(ood_dataset, f'ood_featurized.csv', args.dataset_name, args.property, label = args.data_label)
 
     train_set , eval_set, ood_set = handle_nan_values(train_set, eval_set, ood_set, args.nan_strategy, args.dataset_name)
 
@@ -200,7 +200,7 @@ def main(args, ood_ratio=0.05):
     -------
     saves pkl of featurized data
     """
-    path = os.path.join(DATA_DIR, args.dataset_name, args.property)
+    path = os.path.join(DATA_DIR, args.data_label, args.dataset_name, args.property)
     os.makedirs(path, exist_ok=True)
 
     if args.method == 'ood':
@@ -231,7 +231,7 @@ def main(args, ood_ratio=0.05):
     dataset = {}
     for split_name in ['train', 'eval', 'ood']:
         if args.dataset_name == 'mp' or args.dataset_name == 'aflow':
-            filename_feat_data = os.path.join(DATA_DIR, args.dataset_name, args.property, f'{split_name}.csv')
+            filename_feat_data = os.path.join(DATA_DIR, args.data_label, args.dataset_name, args.property, f'{split_name}.csv')
             data = pd.read_csv(filename_feat_data)
             X, y, formulae, _ = generate_features(data, elem_prop='oliynyk') 
         elif args.dataset_name == 'matbench':
@@ -262,7 +262,7 @@ def main(args, ood_ratio=0.05):
         filename_parts.append('rdkit')
     filename = '_'.join(filename_parts) + '.pkl'
     # save data
-    save_path = os.path.join(DATA_DIR, args.dataset_name, args.property, filename)
+    save_path = os.path.join(DATA_DIR, args.data_label, args.dataset_name, args.property, filename)
     with open(save_path, 'wb') as f: 
         pickle.dump(dataset, f)
 
@@ -280,6 +280,8 @@ if __name__ == "__main__":
     parser.add_argument('--scaler', default='minmax', choices=['minmax', 'standard'])
     parser.add_argument('--method', default='ood', choices=['ood', 'swanson'])
     parser.add_argument('--test_size', type=float, default=.5)
+    parser.add_argument('--data_label', type=str, default='')
+    
 
     args = parser.parse_args()
 

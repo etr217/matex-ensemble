@@ -90,7 +90,7 @@ def run_supervised_training_and_eval(args, logdir='log'):
 
     # Data
     print('loading data')
-    samples = load_pkl(osp.join('data', args.dataset_name, args.prop_type, f'{args.data_filename}.pkl'))
+    samples = load_pkl(osp.join('data', args.data_label, args.dataset_name, args.prop_type, f'{args.data_filename}.pkl'))
     split_frac = len(samples['train_formula']) / (
         len(samples['train_formula']) + len(samples['eval_formula']) + len(samples['ood_formula'])
     )
@@ -190,7 +190,8 @@ if __name__ == "__main__":
     parser.add_argument('--hidden_depth', type=int, default=3)
     parser.add_argument('--debug', default=False)
     parser.add_argument('--model_path', default=None) #datetime
-    parser.add_argument('--random', type=bool, default=False) #datetime
+    parser.add_argument('--random', type=bool, default=False)
+    parser.add_argument('--data_label', type=str, default='')
     args = parser.parse_args()
 
     run_supervised_training_and_eval(args)

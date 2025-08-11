@@ -436,8 +436,8 @@ def ood_split(self, ratio: float = 0.05) -> Tuple[MODData, MODData, MODData]:
         return train_moddata, ind_moddata, ood_moddata
 
 
-def save_dataset_as_csv(dataset, filename, dataset_name, property):
-    dir_path = os.path.join(DATA_DIR, dataset_name, property)
+def save_dataset_as_csv(dataset, filename, dataset_name, property, label = ''):
+    dir_path = os.path.join(DATA_DIR, label, dataset_name, property)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
     df = pd.DataFrame({
