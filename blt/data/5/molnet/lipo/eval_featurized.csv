@@ -1,0 +1,6 @@
+formula,target
+[O-][N+](=O)c1ccc2c(c1)C(=O)C(=O)c3ccccc23,0.21230120934350769
+CN(c1ccc2c(C)n(C)nc2c1)c3ccnc(Nc4ccc(C)c(c4)S(=O)(=O)N)n3,0.9389776954831404
+CCC(N1NC(=O)C2=C(C1=O)C(=O)c3ccc(Cl)cc3N2)c4ccncc4,-1.2905978869907326
+Nc1ccc(cc1)S(=O)(=O)Nc2ccccn2,-1.794316814882978
+CCN1CCN(CC1)c2ccc(Nc3cc(ncn3)N(C)C(=O)Nc4c(Cl)c(OC)cc(OC)c4Cl)cc2,1.2692851891829737
